@@ -1,11 +1,18 @@
 pragma solidity ^0.4.17;
 
 contract SimpleStorage {
+  event Odd();
+  event Even();
+
   uint myVariable;
 
   function set(uint x) public {
-    while(true) {
-      myVariable = x;
+    myVariable = x;
+
+    if (x % 2 == 0) {
+      Even();
+    } else {
+      Odd();
     }
   }
 

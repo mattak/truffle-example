@@ -24,13 +24,25 @@ App = {
     },
 
     initWeb3: function () {
+        if (typeof web3 !== 'undefined') {
+            App.web3Provider = web3.currentProvider;
+        } else {
+            App.web3Provider = new web3.providers.HttpProvider("http://localhost:7545");
+        }
+        web3 = new Web3(App.web3Provider);
+
         return App.initContract();
     },
 
     initContract: function () {
-        /*
-         * Replace me...
-         */
+        $.getJSON('Adoption.json', data => {
+            var AdoptionArtifact = data;
+            App.contracts.Adoption = TruffleContract(AdoptionArtifact);
+
+            App.contracts.Adoption.setProvider(App.web3Provider);
+
+            return App.markAdopted();
+        });
 
         return App.bindEvents();
     },
@@ -40,21 +52,48 @@ App = {
     },
 
     markAdopted: function (adopters, account) {
-        /*
-         * Replace me...
-         */
+        var adoptionInstance;
+
+        App.contracts.Adoption.deployed()
+            .then(it => it.getOnSales())
+            .then(sales => {
+                for (i = 0; i < sales.length; i++) {
+                    var sale = sales[i];
+                    console.log("adopted[" + i + "]: " + sale);
+
+                    if (sale) {
+                        $('.panel-pet').eq(i).find('button').text('Success').attr('disabled', true);
+                    }
+                }
+            })
+            .catch(err => console.log(err.message));
     },
 
     handleAdopt: function (event) {
         event.preventDefault();
 
         var petId = parseInt($(event.target).data('id'));
+        var adoptionInstance;
 
-        /*
-         * Replace me...
-         */
+        web3.eth.getAccounts((err, accounts) => {
+            if (err) console.log(err);
+
+            var account = accounts[0];
+
+            App.contracts.Adoption.deployed()
+                .then(instance => {
+                    adoptionInstance = instance;
+
+                    console.log("adopt: petId(" + petId + "), account(" + account + ")");
+
+                    var result = adoptionInstance.adopt(petId);
+                    console.log("adopted");
+                    return result;
+                })
+                .then(result => App.markAdopted())
+                .catch(err => console.log(err.message));
+        });
     }
-
 };
 
 $(function () {
@@ -62,3 +101,4 @@ $(function () {
         App.init();
     });
 });
+
